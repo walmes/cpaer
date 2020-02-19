@@ -1,0 +1,111 @@
+---
+title: >
+  <div class="hidden">Curso em Planejamento e Análise de Experimentos com R<div>
+bibliography: config/refs.bib
+csl: config/ABNT-UFPR-2011-Mendeley.csl
+output:
+  html_document:
+    number_sections: false
+    toc: false
+    includes:
+      before_body: config/header-index.html
+      after_body: config/footer.html
+---
+
+```{r setup, include=FALSE}
+source("config/setup.R")
+```
+
+# Informações
+
+  + **Curso:** Planejamento e Análise de Experimentos com R.
+  + **Instrutor:** [Walmes Marques Zeviani], (DEST/[LEG]).
+  + **Local:** Escola SUperior de Agricultura "Luiz de Queiroz" (ESALQ/USP) · Piracicaba/SP.
+  + **Período:** 19 a 21 de Fevereiro de 2020.
+  + **Público:** Alunos do Programa de Pós Graduação em Solos e Nutrição de Plantas.
+  + **Carga horária**: 15 horas.
+
+# Formulário de pré-avaliação
+
+<div class="alert alert-info" role="alert">
+  <a href="https://forms.gle/nk2tXgZoqw5rgXuJ8" target="_blank">Clique aqui para preencher o formulário de pré-avaliação.</a>
+</div>
+
+# Ementa prevista
+
+  1. Revisão de R.
+  2. Manipulação e visualização de dados experimentais.
+     1. Preparo e importação dos dados.
+     2. Inspeção, transformação e curadoria.
+     3. Medidas descritivas e gráficos.
+  3. Análise de experimentos com um fator qualitativo.
+     1. Principais delineamentos.
+     2. Especificação e análise dos pressupostos.
+     3. Estimação e inferência.
+     4. Testes de comparação de médias.
+     5. Experimentos desbalanceados.
+  4. Análise de experimentos com um fator quantitativo.
+     1. Regressão linear simples e polinomial.
+     2. Regressão múltipla.
+     3. Regressão não linear.
+     4. Regressões semi-paramétricas.
+  5. Análise de experimentos fatoriais.
+     1. Especificação e inferência.
+     2. Estudo da interação.
+     3. Modelos de superfície de resposta.
+     4. Técnicas de confundimento e fracionamento.
+  6. Análise de experimentos multinível.
+     1. Parcela subdividida.
+     2. Medidas repetidas.
+  7. Análise de experimentos com respostas não Normais.
+     1. Abordagens para dados de contagem.
+     2. Abordagens para dados de proporção.
+     3. Abordagens para dados de sobrevivência.
+
+**Atenção**: ementa sujeita a alteração conforme andamento do Curso.
+
+# Materiais complementares
+
+  * [Manual de Planejamento e Análise de Experimentos com R](http://leg.ufpr.br/~walmes/mpaer/) (em construção).
+  * [Cursos relacionados](http://leg.ufpr.br/~walmes/home/shortcourses/).
+
+# Requisitos de software
+
+  1. R com versão >= 3.6.0. ([CRAN](https://cran.r-project.org/)).
+  2. A seguinte lista de pacotes:
+  \
+```{r, eval = FALSE}
+# Principais pacotes.
+pkg <- c("tidyverse", "multcomp", "doBy", "emmeans", "car", "lme4",
+         "rmarkdown", "agricolae", "ScottKnott", "devtools")
+install.packages(pkg, dependencies =  TRUE)
+
+# Pacote com conjuntos de dados.
+devtools::install_github(repo = "pet-estatistica/labestData")
+```
+
+# Referências bibliográficas
+
+```{r, include = FALSE}
+# system("sed '/Url/d' config/refs.bib > config/Refs.bib")
+refs <- system("grep -E '^@[[:alpha:]]+{' config/refs.bib",
+               intern = TRUE)
+refs <- gsub("^@[[:alpha:]]+\\{([[:alnum:]]+),",
+             replacement = "@\\1",
+             x = refs)
+cat(refs, sep = ", ")
+x <- paste(refs, collapse = ", ")
+```
+
+---
+nocite: |
+  `r x`
+...
+
+<!-- Coloca as referências aqui. -->
+<div id="refs">
+</div>
+
+<!-- links -->
+[Walmes Marques Zeviani]: http://leg.ufpr.br/~walmes
+[LEG]: http://www.leg.ufpr.br

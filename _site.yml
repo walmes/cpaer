@@ -1,0 +1,42 @@
+name: "CPAER"
+# output_dir: "docs"
+exclude: ["README.md", "cache", "_site.yml", "_build.sh", "_deploy.sh"]
+output:
+  html_document:
+    theme: united
+    highlight: default
+    number_sections: true
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    includes:
+      in_header: config/MathJax.html
+      before_body: config/header.html
+      after_body: config/footer.html
+    css: config/style-site.css
+navbar:
+  left:
+    - icon: fa-home
+      href: index.html
+    # - text: "Slides"
+    #   icon: fa-desktop
+    #   menu:
+    #   - text: "slides/"
+    #     icon: fa-folder-open-o
+    #     href: slides/
+    # - text: "Tutoriais"
+    #   icon: fa-file
+    #   menu:
+    #   - text: "tutoriais/"
+    #     icon: fa-folder-open-o
+    #     href: tutoriais/
+    - text: "Scripts"
+      icon: fa-code
+      href: scripts/
+  right:
+    - icon: fa-user
+      href: http://leg.ufpr.br/~walmes
+    - icon: fa-git-square
+      href: https://github.com/walmes/cpaer
