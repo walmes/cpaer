@@ -43,13 +43,35 @@ BanzattoQd3.2.1 %>%
 ggplot(data = BanzattoQd3.2.1,
        mapping = aes(x = reorder(trat, pulgoes),
                      y = pulgoes)) +
-    # scale_y_log10() +
-    geom_point()
+    scale_y_log10() +
+    # geom_point()
+    geom_boxplot() +
+    geom_jitter(width = 0.2,
+                height = 0,
+                color = "#2369bd",
+                pch = 19,
+                size = 4)
+
+# DANGER: boxplot apenas com número razoável de valores, sugestão >= 15.
+# ggplot(data = BanzattoQd3.2.1,
+#        mapping = aes(x = reorder(trat, pulgoes),
+#                      y = pulgoes)) +
+#     geom_boxplot()
 
 #-----------------------------------------------------------------------
 # Ajuste do modelo.
 
+# Ajuste do modelo.
 m0 <- lm(pulgoes ~ trat, data = BanzattoQd3.2.1)
+
+is.list(m0)
+names(m0)
+str(m0)
+class(m0)
+methods(class = "lm")
+
+m0$residuals
+residuals(m0)
 
 # Estimativas dos efeitos. Restrição de zerar primeiro nível.
 cbind(coef(m0))
@@ -108,6 +130,10 @@ pred <- cbind(pred,
 pred$trat <- reorder(pred$trat, pred$fit)
 head(pred)
 
+pred <- pred %>%
+    mutate_at(.vars = c("fit", "lwr", "upr"), .funs = "exp")
+pred
+
 ggplot(data = pred,
        mapping = aes(x = trat, y = fit)) +
     geom_point() +
@@ -116,6 +142,37 @@ ggplot(data = pred,
     geom_text(mapping = aes(label = sprintf("%0.2f", fit)),
               hjust = 0,
               nudge_x = 0.05)
+
+tb_tukey <- agricolae::HSD.test(m0, trt = "trat", console = TRUE)
+str(tb_tukey)
+
+tb_tukey <- tb_tukey$groups %>%
+    rownames_to_column(var = "trat")
+tb_tukey
+pred
+
+tb_means <- inner_join(pred, tb_tukey, by = "trat")
+
+ggplot(data = tb_means,
+       mapping = aes(x = reorder(trat, fit), y = fit)) +
+    # geom_point() +
+    geom_col() +
+    geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
+                  width = 0) +
+    geom_text(mapping = aes(label = sprintf("%0.2f %s", fit, groups)),
+              hjust = 0,
+              nudge_x = 0.05)
+
+ggplot(data = tb_means,
+       mapping = aes(x = reorder(trat, fit), y = fit)) +
+    # geom_point() +
+    geom_col() +
+    geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
+                  width = 0) +
+    geom_text(mapping = aes(label = sprintf("%0.2f %s", fit, groups)),
+              hjust = 0,
+              nudge_x = 0.05) +
+    coord_flip()
 
 #-----------------------------------------------------------------------
 # Fazer a casualização.
@@ -128,6 +185,52 @@ data.frame(trat = sample(trat), ue = 1:length(trat))
 
 # Opção 2: sorteie as unidades experimentais ordenadas para os níveis.
 data.frame(trat = trat, ue = sample(1:length(trat)))
+
+#-----------------------------------------------------------------------
+
+# Análise de experimento em blocos.
+tb <- BanzattoQd4.5.2
+str(tb)
+
+ggplot(data = tb,
+       mapping = aes(x = promalin, y = peso, color = bloco)) +
+    geom_point() +
+    geom_line(mapping = aes(group = bloco))
+
+m0 <- lm(peso ~ bloco + promalin, data = tb)
+
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+MASS::boxcox(m0)
+
+anova(m0)
+
+# Estimated Marginal Means (LS means).
+library(emmeans)
+
+emm <- emmeans(m0, spec = ~promalin)
+# class(emm)
+# str(emm)
+# slots(emm)
+attr(emm, "linfct") %*% coef(m0)
+coef(m0)
+
+contrast(emm, method = "pairwise")
+tb_means <- multcomp::cld(emm) %>%
+    as.data.frame() %>%
+    mutate(cld = c("b", "b", "b", "ab", "a"))
+
+ggplot(data = tb_means,
+       mapping = aes(y = reorder(promalin, emmean), x = emmean)) +
+    geom_point() +
+    geom_errorbarh(mapping = aes(xmin = lower.CL, xmax = upper.CL),
+                   height = 0) +
+    geom_text(mapping = aes(label = sprintf("%0.1f %s", emmean, cld)),
+              vjust = 0, nudge_y = 0.05)
+
+
 
 #-----------------------------------------------------------------------
 # Datasets.
