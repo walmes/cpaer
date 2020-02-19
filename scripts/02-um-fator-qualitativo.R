@@ -187,50 +187,124 @@ data.frame(trat = sample(trat), ue = 1:length(trat))
 data.frame(trat = trat, ue = sample(1:length(trat)))
 
 #-----------------------------------------------------------------------
+# Delineamento de Blocos Completos Casualizados.
 
-# Análise de experimento em blocos.
 tb <- BanzattoQd4.5.2
 str(tb)
 
+# Valores observados conectados conforme o bloco.
 ggplot(data = tb,
        mapping = aes(x = promalin, y = peso, color = bloco)) +
     geom_point() +
     geom_line(mapping = aes(group = bloco))
 
+# Ajuste do modelo: y_{ij} = \mu + Bloco_i + Trat_j + \epsilon_{ij}
 m0 <- lm(peso ~ bloco + promalin, data = tb)
 
+# Análise dos pressupostos.
 par(mfrow = c(2, 2))
 plot(m0)
 layout(1)
 
-MASS::boxcox(m0)
+# Teste de normalidade.
+shapiro.test(rstudent(m0))
+shapiro.test(residuals(m0))
 
+# Quadro de análise de variância.
 anova(m0)
 
 # Estimated Marginal Means (LS means).
 library(emmeans)
 
+# Médias marginais para efeito de promalin.
 emm <- emmeans(m0, spec = ~promalin)
-# class(emm)
-# str(emm)
-# slots(emm)
-attr(emm, "linfct") %*% coef(m0)
+
+# Classe e conteúdo.
+class(emm)
+slotNames(emm)
+
+# A matriz de combinações lineares usadas para as médias.
+emm@linfct
+attr(emm, "linfct")
 coef(m0)
 
+# Contrastes par a par.
 contrast(emm, method = "pairwise")
+
+# Contraste com resumo compacto de letras.
 tb_means <- multcomp::cld(emm) %>%
     as.data.frame() %>%
     mutate(cld = c("b", "b", "b", "ab", "a"))
+tb_means
 
+# Gráfico com segmentos de erro.
 ggplot(data = tb_means,
        mapping = aes(y = reorder(promalin, emmean), x = emmean)) +
     geom_point() +
     geom_errorbarh(mapping = aes(xmin = lower.CL, xmax = upper.CL),
                    height = 0) +
     geom_text(mapping = aes(label = sprintf("%0.1f %s", emmean, cld)),
+              vjust = 0, nudge_y = 0.05) +
+    labs(x = "Peso", y = "Tratamento")
+
+#-----------------------------------------------------------------------
+# Delineamento Quadrado Latino.
+
+tb <- PimentelTb6.3.1
+str(tb)
+
+# Visualização dos dados.
+ggplot(data = tb,
+       mapping = aes(x = adub,
+                     y = prod,
+                     color = linhas,
+                     shape = colunas)) +
+    geom_point()
+
+# Ajuste do modelo:
+# y_{ijk} = \mu + Lin_i + Col_j + Adub_k + \epsilon_{ijk}
+m0 <- lm(prod ~ linhas + colunas + adub, data = tb)
+
+# Análise dos pressupostos.
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+# Quadro de análise de variância.
+anova(m0)
+
+# Médias ajustadas para nível de adubação.
+emm <- emmeans(m0, spec = ~adub)
+emm
+
+# Erro tipo I para uma colação de 15 hipóteses.
+# choose(6, 2): contrastes entre 6 médias).
+1 - (1 - 0.05)^15
+
+# Nível de significância para o teste individual.
+1 - (1 - 0.05)^(1/15)
+
+1 - (1 - 0.0034)^15  # Testando.
+1 - (1 - 0.05/15)^15 # Com a aproximação feita bom Bonferroni.
+
+# Sem correção para a multiplicidade.
+tb_means <- multcomp::cld(emm, adjust = "none") %>%
+    as.data.frame()
+tb_means
+
+# Com a correção de Bonferroni.
+tb_means <- multcomp::cld(emm, adjust = "bonferroni") %>%
+    as.data.frame()
+tb_means
+
+# Gráficos com segmentos.
+ggplot(data = tb_means,
+       mapping = aes(y = reorder(adub, emmean), x = emmean)) +
+    geom_point() +
+    geom_errorbarh(mapping = aes(xmin = lower.CL, xmax = upper.CL),
+                   height = 0) +
+    geom_text(mapping = aes(label = sprintf("%0.1f", emmean)),
               vjust = 0, nudge_y = 0.05)
-
-
 
 #-----------------------------------------------------------------------
 # Datasets.
