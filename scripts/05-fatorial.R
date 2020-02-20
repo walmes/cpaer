@@ -244,3 +244,58 @@ ggplot(data = tb,
               mapping = aes(x = potassio, y = y))
 
 #-----------------------------------------------------------------------
+# Modelo de regressão múltipla.
+
+url <- "http://leg.ufpr.br/~walmes/data/chimarrita.txt"
+tb <- read_tsv(file = url, comment = "#")
+attr(tb, "spec") <- NULL
+str(tb)
+
+tb <- filter(tb, fer == "sim")
+
+lattice::splom(select_if(tb, is.numeric))
+
+#-----------------------------------------------------------------------
+# Desfolha do algodão.
+
+# Inspeciona os dados.
+url <- "http://leg.ufpr.br/~walmes/data/desfolha_algodao.txt"
+browseURL(url)
+
+# Importa os dados pela URL.
+tb <- read_tsv(file = url, comment = "#")
+str(tb)
+
+# Elimina o atributo para prints pais enxutos.
+attr(tb, "spec") <- NULL
+
+# Tabela de ocorrência dos pontos experimentais.
+ftable(xtabs(~bloco + fase + desf, data = tb))
+
+tb %>%
+    arrange(bloco, fase, desf, planta)
+
+# Média por vaso (duas plantas por vaso).
+tb2 <- tb %>%
+    group_by(bloco, fase, desf) %>%
+    summarise_at(.vars = vars(nestrrep:pesocap),
+                 .funs = "mean",
+                 na.rm = TRUE) %>%
+    ungroup()
+str(tb2)
+
+# dput(unique(tb2$fase)[c(5, 1, 3, 4, 2)])
+l <- c("veget", "botflor", "floresc", "maça", "capulho")
+tb2 <- tb2 %>%
+    mutate(fase = factor(fase, levels = l))
+
+levels(tb2$fase)
+
+# Usando facetas para repartir.
+ggplot(data = tb2,
+       mapping = aes(x = desf,
+                     y = pesocap)) +
+    facet_wrap(facets = ~fase) +
+    geom_point() +
+    stat_summary(geom = "line",
+                 fun.y = "mean")
