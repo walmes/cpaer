@@ -72,7 +72,56 @@ ggplot(data = tb_means,
               nudge_x = 0.05)
 
 #-----------------------------------------------------------------------
+# Experimento de ganho de peso.
 
 url <- "http://leg.ufpr.br/~walmes/data/castracao.txt"
 tb <- read_tsv(url, comment = "#")
 str(tb)
+
+ggplot(data = tb,
+       mapping = aes(x = ener,
+                     y = peso28,
+                     size = pi,
+                     alpha = id)) +
+    facet_wrap(facets = ~sexo) +
+    geom_point()
+
+tb <- tb %>%
+    mutate(S = factor(sexo),
+           E = factor(ener))
+
+m0 <- lm(peso28 ~ pi + id + S * E, data = tb)
+
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+summary(tb[, c("pi", "id")])
+
+anova(m0)
+drop1(m0, scope = . ~ ., test = "F")
+car::Anova(m0)
+
+emmeans(m0, specs = ~E) %>%
+    multcomp::cld()
+
+#-----------------------------------------------------------------------
+
+names(tb)
+# tb$rcarc
+# tb$receitaliquida
+
+tb_long <- tb %>%
+    gather(key = "resposta", value = "valor", rcarc:receitaliquida)
+
+tb_anova <- tb_long %>%
+    group_by(resposta) %>%
+    do(anova = {
+        m0 <- lm(valor ~ pi + id + S * E, data = .)
+        list(anova(m0))
+    })
+
+tb_anova$anova[[1]]
+tb_anova$anova
+
+#-----------------------------------------------------------------------
