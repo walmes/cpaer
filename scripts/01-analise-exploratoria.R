@@ -7,12 +7,13 @@
 #                                        walmes@ufpr.br · @walmeszeviani
 #                      Laboratory of Statistics and Geoinformation (LEG)
 #                Department of Statistics · Federal University of Paraná
-#                                       2020-fev-18 · Curitiba/PR/Brazil
+#                                       2020-fev-19 · Curitiba/PR/Brazil
 #-----------------------------------------------------------------------
 
 #-----------------------------------------------------------------------
 # Pacotes.
 
+# Manipulação e visualização de dados.
 library(tidyverse)
 
 #-----------------------------------------------------------------------
@@ -45,10 +46,10 @@ xtabs(~gen + dose, data = tb)
 # Médias por estratos.
 tb %>%
     group_by(gen) %>%
-    # group_by(dose) %>%
     summarise_at(.vars = "volu", .funs = c("mean", "sd")) %>%
     arrange(mean)
 
+# Tabela cruzada com médias nas intercções.
 tb %>%
     group_by(gen, dose) %>%
     summarise_at(.vars = "volu", .funs = "mean") %>%
@@ -58,14 +59,16 @@ tb %>%
 # Diagrama de dispersão.
 ggplot(data = tb,
        mapping = aes(x = gen, y = volu, color = factor(dose))) +
-    geom_point()
+    geom_point() +
+    labs(x = "Genótipo", y = "Volume de raízes", color = "Dose")
 
 # Níveis ordenados pela resposta média.
 ggplot(data = tb,
        mapping = aes(x = reorder(gen, volu),
                      y = volu,
                      color = factor(dose))) +
-    geom_point()
+    geom_point() +
+    labs(x = "Genótipo", y = "Volume de raízes", color = "Dose")
 
 # Linhas conectando médias.
 ggplot(data = tb,
@@ -75,7 +78,8 @@ ggplot(data = tb,
     geom_point() +
     stat_summary(mapping = aes(group = dose),
                  geom = "line",
-                 fun.y = "mean")
+                 fun.y = "mean") +
+    labs(x = "Genótipo", y = "Volume de raízes", color = "Dose")
 
 # Usando facetas para repartir.
 ggplot(data = tb,
@@ -83,11 +87,8 @@ ggplot(data = tb,
                      y = volu)) +
     facet_wrap(facets = ~gen) +
     geom_point() +
-    stat_summary(geom = "line", fun.y = "mean")
-
-ggplot(data = tb,
-       mapping = aes(x = volu)) +
-    geom_histogram()
+    stat_summary(geom = "line", fun.y = "mean") +
+    labs(x = "Genótipo", y = "Volume de raízes")
 
 #-----------------------------------------------------------------------
 # Produção de soja em função de adubação com K e nível de água.
@@ -126,7 +127,12 @@ ggplot(data = tb,
     geom_jitter(width = 5) +
     stat_summary(mapping = aes(group = agua),
                  geom = "line",
-                 fun.y = "mean")
+                 fun.y = "mean") +
+    labs(x = "Potássio no solo",
+         y = "Rendimento de grãos",
+         color = "Conteúdo de água") +
+    theme(legend.position = c(0.95, 0.05),
+          legend.justification = c(1, 0))
 
 # Usando facetas para repartir.
 ggplot(data = tb,
@@ -136,7 +142,9 @@ ggplot(data = tb,
     geom_point() +
     stat_summary(mapping = aes(group = bloco),
                  geom = "line",
-                 fun.y = "mean")
+                 fun.y = "mean") +
+    labs(x = "Potássio no solo",
+         y = "Rendimento de grãos")
 
 #-----------------------------------------------------------------------
 # Desfolha do algodão.
@@ -155,6 +163,8 @@ attr(tb, "spec") <- NULL
 # Tabela de ocorrência dos pontos experimentais.
 ftable(xtabs(~bloco + fase + desf, data = tb))
 
+# Duas unidades de mensuração em cada parcela, ou seja, duas plantas por
+# vaso.
 tb %>%
     arrange(bloco, fase, desf, planta)
 
@@ -167,6 +177,7 @@ tb2 <- tb %>%
     ungroup()
 str(tb2)
 
+# Coloca as fases de crescimento com níveis na ordem cronológica.
 # dput(unique(tb2$fase)[c(5, 1, 3, 4, 2)])
 l <- c("veget", "botflor", "floresc", "maça", "capulho")
 tb2 <- tb2 %>%
@@ -181,7 +192,9 @@ ggplot(data = tb2,
     facet_wrap(facets = ~fase) +
     geom_point() +
     stat_summary(geom = "line",
-                 fun.y = "mean")
+                 fun.y = "mean") +
+    labs(x = "Nível de desfolha artificial",
+         y = "Peso de capulhos por parcela")
 
 #-----------------------------------------------------------------------
 # Secagem do solo em microondas.
@@ -190,7 +203,7 @@ ggplot(data = tb2,
 url <- "http://leg.ufpr.br/~walmes/data/emr11.txt"
 browseURL(url)
 
-# Importa os dados pela URL.
+# Importa os dados pela URL. Define os tipos de valor para leitura.
 tb <- read_tsv(file = url,
                col_types = cols(
                    nome = col_factor(NULL),
@@ -198,7 +211,7 @@ tb <- read_tsv(file = url,
                    tempo = col_integer()))
 str(tb)
 
-# Imprime para reuso as especificações de cada variáveis.
+# Imprime para reuso as especificações de cada variável.
 spec(tb)
 
 # Elimina o atributo para prints pais enxutos.
@@ -213,7 +226,9 @@ ggplot(data = tb,
                      y = umrel)) +
     facet_wrap(facets = ~nome) +
     geom_point() +
-    stat_summary(geom = "line", fun.y = "mean")
+    stat_summary(geom = "line", fun.y = "mean") +
+    labs(x = "Período no microondas",
+         y = "Conteúdo de umidade relativa extraída do solo")
 
 # Adição de linha de tendência.
 ggplot(data = tb,
@@ -221,7 +236,10 @@ ggplot(data = tb,
                      y = umrel)) +
     facet_wrap(facets = ~nome) +
     geom_point() +
-    geom_smooth()
+    geom_smooth() +
+    labs(x = "Período no microondas",
+         y = "Conteúdo de umidade relativa extraída do solo",
+         caption = "Linhas azuis usadas para indicar a tendência.")
 
 #-----------------------------------------------------------------------
 # Curva de retenção de água do solo.
@@ -268,21 +286,13 @@ ggplot(data = tb,
     facet_grid(facets = prof ~ condi) +
     geom_point() +
     stat_summary(geom = "line", fun.y = "mean") +
-    scale_x_log10()
+    scale_x_log10() +
+    labs(x = "Tensão matricial",
+         y = "Umidade do solo",
+         color = "Posição de\ncoleta")
 
 #-----------------------------------------------------------------------
-# Mais exemplos.
-
-url <- "http://leg.ufpr.br/~walmes/data/preabate.txt"
-url <- "http://leg.ufpr.br/~walmes/data/abacaxicra.txt"
-url <- "http://leg.ufpr.br/~walmes/data/osmo.txt"
-url <- "http://leg.ufpr.br/~walmes/data/soja_nematoide.txt"
-url <- "http://leg.ufpr.br/~walmes/data/mosca_algodao_aval.txt"
-url <- "http://leg.ufpr.br/~walmes/data/giberelina_milho_ivg.txt"
-url <- "http://leg.ufpr.br/~walmes/data/gado_crescimento.txt"
-url <- "http://leg.ufpr.br/~walmes/data/chimarrita.txt"
-
-#-----------------------------------------------------------------------
+# Temperatura corporal de suinos.
 
 url <- "http://leg.ufpr.br/~walmes/data/preabate.txt"
 browseURL(url)
@@ -290,10 +300,12 @@ browseURL(url)
 tb <- read_tsv(file = url, locale = locale(decimal_mark = ","))
 str(tb)
 
-# Cria uma cópia com uma codificação mais descritiva do tratamento.
+# Cria variável com codificação mais descritiva dos níveis.
 tb <- tb %>%
     mutate(trat2 = case_when(trat == 1 ~ "Com aspersão",
                              trat == 2 ~ "Sem aspersão"))
+
+xtabs(~trat2 + trat, data = tb)
 
 ggplot(data = tb,
        mapping = aes(x = hora,
@@ -304,10 +316,22 @@ ggplot(data = tb,
     geom_smooth(span = 0.3) +
     labs(x = "Tempo de espera para abate (min)",
          y = expression("Temperatura corporal" ~ (""^degree * C))) +
+    ggtitle(label = "Temperatura corporal de suínos")
+
+ggplot(data = tb,
+       mapping = aes(x = hora,
+                     y = temp)) +
+    facet_grid(facets = trat2 ~ rep) +
+    geom_point() +
+    # stat_summary(geom = "line", fun.y = "mean") +
+    geom_smooth(span = 0.33) +
+    labs(x = "Tempo de espera para abate (min)",
+         y = expression("Temperatura corporal" ~ (""^degree * C))) +
     ggtitle(label = "Temperatura corporal de suínos",
-            subtitle = "Tratamentos: 1 - Com aspersão, 2 - Sem aspersão")
+            subtitle = "Tratamentos x Unidades Experimentais (Animais)")
 
 #-----------------------------------------------------------------------
+# Ocorrência de praga em
 
 url <- "http://leg.ufpr.br/~walmes/data/mosca_algodao_aval.txt"
 browseURL(url)
@@ -315,12 +339,17 @@ browseURL(url)
 tb <- read_tsv(file = url, comment = "#")
 str(tb)
 
+# Série ao longo dos dias de avaliação.
 ggplot(data = tb,
        mapping = aes(x = aval,
                      y = totnin)) +
     facet_wrap(facets = ~dexp) +
+    geom_line(mapping = aes(group = rept),
+              color = "gray") +
     geom_point() +
-    stat_summary(geom = "line", fun.y = "mean")
+    stat_summary(geom = "line", fun.y = "mean", size = 1) +
+    labs(x = "Dias após exposição",
+         y = "Número de ninfas")
 
 # Empilha os valores dos terços da planta.
 tb_long <- tb %>%
@@ -331,8 +360,32 @@ ggplot(data = tb_long,
        mapping = aes(x = aval,
                      y = ninfas,
                      color = terco)) +
-    facet_wrap(facets = ~dexp) +
+    facet_wrap(facets = ~dexp, nrow = 1) +
+    # geom_point() +
+    geom_jitter(width = 0.1) +
+    stat_summary(geom = "line", fun.y = "mean") +
+    labs(x = "Dias após exposição",
+         y = "Número de ninfas",
+         color = "Posição")
+
+ggplot(data = tb_long,
+       mapping = aes(x = aval,
+                     y = ninfas)) +
+    facet_grid(facets = terco ~ dexp) +
     geom_point() +
-    stat_summary(geom = "line", fun.y = "mean")
+    stat_summary(geom = "line", fun.y = "mean") +
+    labs(x = "Dias após exposição",
+         y = "Número de ninfas",
+         color = "Posição")
+
+#-----------------------------------------------------------------------
+# Mais exemplos.
+
+url <- "http://leg.ufpr.br/~walmes/data/abacaxicra.txt"
+url <- "http://leg.ufpr.br/~walmes/data/osmo.txt"
+url <- "http://leg.ufpr.br/~walmes/data/soja_nematoide.txt"
+url <- "http://leg.ufpr.br/~walmes/data/giberelina_milho_ivg.txt"
+url <- "http://leg.ufpr.br/~walmes/data/gado_crescimento.txt"
+url <- "http://leg.ufpr.br/~walmes/data/chimarrita.txt"
 
 #-----------------------------------------------------------------------
