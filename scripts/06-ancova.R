@@ -39,6 +39,8 @@ ggplot(data = tb,
                      y = stand)) +
     geom_point()
 
+ggsave("meu-grafico.pdf")
+
 ggplot(data = tb,
        mapping = aes(x = cult,
                      y = prod,
