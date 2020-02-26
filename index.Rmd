@@ -68,6 +68,8 @@ source("config/setup.R")
 
   * [Manual de Planejamento e Análise de Experimentos com R](http://leg.ufpr.br/~walmes/mpaer/) (em construção).
   * [Cursos relacionados](http://leg.ufpr.br/~walmes/home/shortcourses/).
+  * https://rstudio.com/resources/cheatsheets/
+  * https://cran.r-project.org/doc/contrib/Short-refcard.pdf
 
 # Requisitos de software
 
