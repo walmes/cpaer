@@ -15,7 +15,7 @@
 
 library(tidyverse)
 library(labestData)
-ls("package:labestData")
+# ls("package:labestData")
 
 #-----------------------------------------------------------------------
 # Controle de pulgões.
@@ -27,9 +27,10 @@ help(BanzattoQd3.2.1, help_type = "html")
 str(BanzattoQd3.2.1)
 
 # Tabela de frequência para os tratamentos.
-xtabs(~trat, data = BanzattoQd3.2.1)
+xtabs(~trat, data = BanzattoQd3.2.1) %>%
+    cbind()
 
-# Dados desemplilhados.
+# Dados desemplilhados para uma visão retangular.
 BanzattoQd3.2.1 %>%
     spread(key = "rept", value = "pulgoes")
 
@@ -44,43 +45,56 @@ ggplot(data = BanzattoQd3.2.1,
        mapping = aes(x = reorder(trat, pulgoes),
                      y = pulgoes)) +
     scale_y_log10() +
-    # geom_point()
-    geom_boxplot() +
-    geom_jitter(width = 0.2,
+    # geom_boxplot() + # Usar boxplot com r >= 15.
+    # geom_point() +
+    geom_jitter(width = 0.1,
                 height = 0,
                 color = "#2369bd",
                 pch = 19,
                 size = 4)
 
 # DANGER: boxplot apenas com número razoável de valores, sugestão >= 15.
-# ggplot(data = BanzattoQd3.2.1,
-#        mapping = aes(x = reorder(trat, pulgoes),
-#                      y = pulgoes)) +
-#     geom_boxplot()
+ggplot(data = BanzattoQd3.2.1,
+       mapping = aes(x = reorder(trat, pulgoes),
+                     y = pulgoes)) +
+    geom_boxplot()
+
+ggplot(data = BanzattoQd3.2.1,
+       mapping = aes(x = reorder(trat, pulgoes),
+                     y = pulgoes)) +
+    geom_boxplot(width = 0.4) +
+    geom_point(position = position_nudge(x = 0.25)) +
+    scale_y_sqrt()
 
 #-----------------------------------------------------------------------
 # Ajuste do modelo.
 
-# Ajuste do modelo.
+# Ajuste do modelo: y_{ij} = \mu + \tau_i + e_{ij}.
 m0 <- lm(pulgoes ~ trat, data = BanzattoQd3.2.1)
 
-is.list(m0)
-names(m0)
-str(m0)
-class(m0)
-methods(class = "lm")
 
-m0$residuals
-residuals(m0)
+# Inspeciona o objeto.
+is.list(m0)           # É uma lista?
+typeof(m0)            # Qual o tipo?
+length(m0)            # Qual a dimensão?
+names(m0)             # Nomes dos elementos.
+class(m0)             # Classe do objeto.
+methods(class = "lm") # Métodos associados à classe.
+str(m0)               # Estrutura do objeto.
 
-# Estimativas dos efeitos. Restrição de zerar primeiro nível.
+# Formas de extração.
+m0$residuals  # Por endereçamento direto.
+residuals(m0) # Por função extratora ou getter.
+
+# Estimativas dos efeitos. Atenção para a restrição de zerar o efeito do
+# primeiro nível.
 cbind(coef(m0))
 
-# Matriz de contrastes sob a retrição zerar primeiro nível.
+# Matriz de contrastes sob a retrição zerar o efeito do primeiro nível.
 K <- cbind(1, contrasts(BanzattoQd3.2.1$trat))
-K
+unname(K)
 
-# Médias estimadas pelo modelo.
+# Médias por tratamento estimadas pelo modelo.
 K %*% coef(m0)
 
 # Médias amostrais.
@@ -88,14 +102,18 @@ BanzattoQd3.2.1 %>%
     group_by(trat) %>%
     summarise_at(.vars = "pulgoes", .funs = "mean")
 
+# Trocando o tipo de contraste, ou seja, de restrição paramétrica.
+# Agora o último nível tem efeito igual a zero.
 m1 <- update(m0, contrasts = list(trat = "contr.SAS"))
 coef(m1)
 
+# Troca a ordem dos níveis do fator.
 BanzattoQd3.2.1 <- BanzattoQd3.2.1 %>%
     mutate(trat = relevel(trat, ref = "Testemunha"))
-
 levels(BanzattoQd3.2.1$trat)
 
+# Ajusta novamente com nova disposição dos níveis. A testemunha é o
+# nível de referência.
 m0 <- update(m0,  data = BanzattoQd3.2.1)
 coef(m0)
 
@@ -104,24 +122,43 @@ par(mfrow = c(2, 2))
 plot(m0)
 layout(1)
 
-# Transformação boxcox.
+# COMMENT: violação da suposição de relação média-variância nula que
+# endereça a suposição de homocedasticidade. Atenção, ainda pode haver
+# violação da homocedasticidade mesmo com relação média-variância nula.
+
+# Transformação Box-Cox.
 MASS::boxcox(m0)
 abline(v = c(0, 1/3), lty = 2, col = 2)
+
+# COMMENT: o valor de lambda que maximiza a log-verossimilhança
+# (leia-se, por enquanto, atendimento dos pressupostos) pode ainda não
+# corrigir as violações.
 
 # Atualiza o modelo anterior passando o log na resposta.
 m0 <- update(m0, log(.) ~ .)
 
+# Inspeção após a transformação da resposta.
 par(mfrow = c(2, 2))
 plot(m0)
 layout(1)
 
+# Quadro de análise de variância.
 anova(m0)
+
+# Quadro de estimativas. Aqui estão os contrastes contra a testemunha.
 summary(m0)
 
-k <- nlevels(BanzattoQd3.2.1$trat) - 1
-p <- 1 - (1 - 0.05)^k
+# Probabilidade de ao menos um erro de decisão ao fazer comparações
+# multiplas entre k médias sob a hipótese nula.
+k <- nlevels(BanzattoQd3.2.1$trat)
+p <- 1 - (1 - 0.05)^choose(k, 2)
 p
 
+# COMMENT: Ou seja, a chance de declarar que ao menos um contraste seja
+# diferente de zero sem de fato ser é de 40% quando são comparadas 5
+# médias duas a duas (10 hipóteses).
+
+# Médias ajustadas ou valores preditos.
 pred <- data.frame(trat = levels(BanzattoQd3.2.1$trat))
 pred <- cbind(pred,
               as.data.frame(predict(m0,
@@ -130,55 +167,89 @@ pred <- cbind(pred,
 pred$trat <- reorder(pred$trat, pred$fit)
 head(pred)
 
+# Voltando para a escala natural.
 pred <- pred %>%
     mutate_at(.vars = c("fit", "lwr", "upr"), .funs = "exp")
 pred
 
+# Gráfico de segmentos.
 ggplot(data = pred,
        mapping = aes(x = trat, y = fit)) +
     geom_point() +
     geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
-                  width = 0) +
+                  width = 0.05) +
     geom_text(mapping = aes(label = sprintf("%0.2f", fit)),
               hjust = 0,
-              nudge_x = 0.05)
+              nudge_x = 0.05) +
+    geom_point(data = BanzattoQd3.2.1,
+               mapping = aes(x = trat, y = pulgoes),
+               position = position_nudge(x = -0.1),
+               pch = 1)
 
+#-----------------------------------------------------------------------
+# Testes de comparações de médias.
+
+# Teste LSD (least significant difference).
+tb_lsd <- agricolae::LSD.test(m0, trt = "trat", console = TRUE)
+names(tb_lsd)
+tb_lsd$groups
+
+# Teste SNK (Student-Newman-Keuls).
+tb_snk <- agricolae::SNK.test(m0, trt = "trat", console = TRUE)
+names(tb_snk)
+tb_snk$groups
+
+# Teste HSD (honest significant difference).
 tb_tukey <- agricolae::HSD.test(m0, trt = "trat", console = TRUE)
-str(tb_tukey)
+names(tb_tukey)
+tb_tukey$groups
 
+# Prepara para juntar com outra tabela.
 tb_tukey <- tb_tukey$groups %>%
     rownames_to_column(var = "trat")
 tb_tukey
-pred
 
+# Junta resultados do Tukey com a tabela de IC.
 tb_means <- inner_join(pred, tb_tukey, by = "trat")
+tb_means
 
+# Pontos com segmentos.
 ggplot(data = tb_means,
        mapping = aes(x = reorder(trat, fit), y = fit)) +
-    # geom_point() +
-    geom_col() +
+    geom_point() +
     geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
                   width = 0) +
-    geom_text(mapping = aes(label = sprintf("%0.2f %s", fit, groups)),
-              hjust = 0,
-              nudge_x = 0.05)
+    geom_text(mapping = aes(label = sprintf("%0.1f %s", fit, groups)),
+              angle = 90,
+              hjust = 0.5,
+              nudge_x = -0.1)
 
+# Pontos com segmentos e eixos invertidos.
 ggplot(data = tb_means,
        mapping = aes(x = reorder(trat, fit), y = fit)) +
-    # geom_point() +
-    geom_col() +
+    geom_point() +
     geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
                   width = 0) +
-    geom_text(mapping = aes(label = sprintf("%0.2f %s", fit, groups)),
-              hjust = 0,
-              nudge_x = 0.05) +
+    geom_text(mapping = aes(label = sprintf("%0.1f %s", fit, groups)),
+              hjust = 0.5, vjust = -0.5) +
     coord_flip()
+
+# Barra com segmentos.
+ggplot(data = tb_means,
+       mapping = aes(x = reorder(trat, fit), y = fit)) +
+    geom_col() +
+    geom_errorbar(mapping = aes(ymin = lwr, ymax = upr),
+                  width = 0.2) +
+    geom_label(mapping = aes(label = sprintf("%0.0f %s", fit, groups)),
+               hjust = 0,
+               nudge_x = 0.05)
 
 #-----------------------------------------------------------------------
 # Fazer a casualização.
 
 trat <- rep(x = c(levels(BanzattoQd3.2.1$trat), "Novo"),
             times = 8)
+trat
 
 # Opção 1: sorteie os níveis para as unidades experimentais ordenadas.
 data.frame(trat = sample(trat), ue = 1:length(trat))
@@ -189,12 +260,15 @@ data.frame(trat = trat, ue = sample(1:length(trat)))
 #-----------------------------------------------------------------------
 # Delineamento de Blocos Completos Casualizados.
 
+# Usa um nome curto que é ágil.
 tb <- BanzattoQd4.5.2
 str(tb)
 
 # Valores observados conectados conforme o bloco.
 ggplot(data = tb,
-       mapping = aes(x = promalin, y = peso, color = bloco)) +
+       mapping = aes(x = reorder(promalin, peso),
+                     y = peso,
+                     color = bloco)) +
     geom_point() +
     geom_line(mapping = aes(group = bloco))
 
@@ -206,36 +280,55 @@ par(mfrow = c(2, 2))
 plot(m0)
 layout(1)
 
-# Teste de normalidade.
-shapiro.test(rstudent(m0))
-shapiro.test(residuals(m0))
-
 # Quadro de análise de variância.
 anova(m0)
 
-# Estimated Marginal Means (LS means).
+# emmeans: Estimated Marginal Means (aka LS means).
 library(emmeans)
+ls("package:emmeans")
 
 # Médias marginais para efeito de promalin.
 emm <- emmeans(m0, spec = ~promalin)
+emm
 
 # Classe e conteúdo.
+typeof(emm)
 class(emm)
 slotNames(emm)
 
 # A matriz de combinações lineares usadas para as médias.
-emm@linfct
-attr(emm, "linfct")
+emm@linfct          # Extração direta.
+slot(emm, "linfct") # Extração pelo slot.
+attr(emm, "linfct") # Extração pelo atributo.
 coef(m0)
 
 # Contrastes par a par.
+# ATTENTION: já é feita correção dos p-valores para multiplicidade.
 contrast(emm, method = "pairwise")
+
+# Sem ajuste dos p-valores. Isso é o teste t sem correção para a
+# multiplicidade, equivalente ao LSD.
+contrast(emm, method = "pairwise", adjust = "none")
 
 # Contraste com resumo compacto de letras.
 tb_means <- multcomp::cld(emm) %>%
     as.data.frame() %>%
     mutate(cld = c("b", "b", "b", "ab", "a"))
 tb_means
+
+# Automatizando a conversão de números para letras.
+num2let <- function(x) {
+    stopifnot(is.character(x))
+    u <- strsplit(x = trimws(x), split = "")
+    k <- max(as.integer(unlist(u)))
+    sapply(u,
+           function(v) {
+               paste(letters[k:1][as.integer(rev(v))], collapse = "")
+           })
+}
+
+tb_means <- tb_means %>%
+    mutate(cld = num2let(.group))
 
 # Gráfico com segmentos de erro.
 ggplot(data = tb_means,
@@ -250,6 +343,7 @@ ggplot(data = tb_means,
 #-----------------------------------------------------------------------
 # Delineamento Quadrado Latino.
 
+# Nome curto para ficar mais manuzeável.
 tb <- PimentelTb6.3.1
 str(tb)
 
@@ -281,7 +375,7 @@ emm
 # choose(6, 2): contrastes entre 6 médias).
 1 - (1 - 0.05)^15
 
-# Nível de significância para o teste individual.
+# Nível de significância para o teste individual como global a 5%.
 1 - (1 - 0.05)^(1/15)
 
 1 - (1 - 0.0034)^15  # Testando.
@@ -304,10 +398,11 @@ ggplot(data = tb_means,
     geom_errorbarh(mapping = aes(xmin = lower.CL, xmax = upper.CL),
                    height = 0) +
     geom_text(mapping = aes(label = sprintf("%0.1f", emmean)),
-              vjust = 0, nudge_y = 0.05)
+              vjust = 0, nudge_y = 0.05) +
+    labs(y = "Tipos de adubação", x = "Produção")
 
 #-----------------------------------------------------------------------
-# Datasets.
+# Outros datasets para praticar a análise.
 
 # DIC.
 BanzattoQd3.4.1  # Básico.
@@ -329,7 +424,7 @@ BanzattoQd7.3.3 # Fatorial variedade adubação.
 BarbinEx14      # NPK em 2^3 em 3 blocos.
 BarbinPg125     # NPK base 2.
 BarbinPg137     # NPK base 3.
-BarbinPg156     # forma e dose de aplicação.
+BarbinPg156     # Fatorial com forma e dose de aplicação.
 DemetrioTb7.1   # Dose em blocos.
 DiasEg6.2       # Dose em bLocos.
 FariaQd14.3     # Dose em blocos.
@@ -337,7 +432,7 @@ PimentelEg5.2   # DBC típico.
 PimentelEx5.8.4 # DBC típico.
 PimentelEx5.8.5 # DBC típico.
 
-# DQL
+# DQL.
 BarbinPg104       # Típico.
 PimentelEg6.2     # Típico.
 PimentelEx6.6.3   # Contrastes.
