@@ -457,72 +457,7 @@ ggplot(data = tb[-74, ],
 # http://leg.ufpr.br/~walmes/analises/CECarducci/secagem-solos.html.
 
 #-----------------------------------------------------------------------
-# Modelo de regressão múltipla.
-
-url <- "http://leg.ufpr.br/~walmes/data/chimarrita.txt"
-tb <- read_tsv(file = url, comment = "#")
-attr(tb, "spec") <- NULL
-str(tb)
-
-tb <- filter(tb, fer == "sim")
-str(tb)
-
-lattice::splom(select(tb, ends_with("48")))
-lattice::splom(select(tb, ends_with("60")))
-
-names(tb)
-
-tb_sel <- tb %>%
-    select(matches("[[:alpha:]]0$"), lesao48, lesao60)
-tb_sel
-
-tb_long <- tb_sel %>%
-    gather(key = "variavel", value = "valor", -lesao60, -lesao48)
-str(tb_long)
-
-ggplot(data = tb_long,
-       mapping = aes(x = valor, y = lesao60)) +
-    facet_wrap(facets = ~variavel, scale = "free_x") +
-    geom_point() +
-    geom_smooth()
-
-names(tb_sel)
-
-m0 <- lm(lesao60 ~ (cor0 + ida0 + ms0 + ss0 + f0 + b0)^2,
-         data = tb_sel)
-
-par(mfrow = c(2, 2))
-plot(m0)
-layout(1)
-
-summary(m0)
-
-m1 <- update(m0, . ~ ms0 + b0, data = tb_sel)
-anova(m0, m1)
-
-summary(m1)
-
-m2 <- step(m0)
-summary(m2)
-
-pred <- with(na.omit(tb_sel),
-             expand.grid(cor0 = seq(min(cor0), max(cor0), length.out = 20),
-                         # ms0 = seq(min(ms0), max(ms0), length.out = 20),
-                         ms0 = mean(ms0),
-                         ida0 = mean(ida0),
-                         ss0 = mean(ss0),
-                         # b0 = mean(b0),
-                         b0 = seq(min(b0), max(b0), length.out = 20)))
-pred$lesao60 <- predict(m2, newdata = pred)
-
-ggplot(data = pred,
-       mapping = aes(x = b0, y = ms0, fill = lesao60, z = lesao60)) +
-    geom_tile() +
-    geom_contour(color = "black") +
-    scale_fill_distiller(palette = 4)
-
-#-----------------------------------------------------------------------
-# Desfolha do algodão.
+# Experimento de desfolha do algodão em fases de crescimento.
 
 # Inspeciona os dados.
 url <- "http://leg.ufpr.br/~walmes/data/desfolha_algodao.txt"
@@ -554,7 +489,6 @@ str(tb2)
 l <- c("veget", "botflor", "floresc", "maça", "capulho")
 tb2 <- tb2 %>%
     mutate(fase = factor(fase, levels = l))
-
 levels(tb2$fase)
 
 # Usando facetas para repartir.
@@ -565,5 +499,131 @@ ggplot(data = tb2,
     geom_point() +
     stat_summary(geom = "line",
                  fun.y = "mean")
+
+#-----------------------------------------------------------------------
+# Ajuste do modelo com fatores qualitativos (apenas por reforço).
+
+# Criando o fator de níveis categóricos.
+tb2 <- tb2 %>%
+    mutate(Ds = factor(desf),
+           Fs = fase)
+
+# Modelo: y_{ijk} = \mu + Fs_i + Ds_j + Fs:Ds_{ij} + e_{ijk}.
+m0 <- lm(pesocap ~ Fs * Ds, data = tb2)
+
+# Inspeção dos pressupostos.
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+# Quadro de análise de variância.
+anova(m0)
+
+# Desdobramento em testes de comparação múltipla com a testemunha
+# (desfolha 0).
+emm <- emmeans(m0, specs = ~Ds | Fs)
+emm
+
+# Contrastes contra a testemunha.
+# contrast(emm, method = "trt.vs.ctrl")
+ctr <- contrast(emm, method = "dunnett")
+ctr
+
+# Tabela com o
+tb_means <- multcomp::cld(emm) %>%
+    as.data.frame() %>%
+    group_by(Fs) %>%
+    mutate(cld = num2let(.group)) %>%
+    ungroup()
+tb_means
+
+# Junta o resultado das comparações com a testemunha às médias.
+tb_means_ctr <- as.data.frame(ctr) %>%
+    separate(col = "contrast", into = c("Ds", "Test")) %>%
+    select(Ds, Fs, estimate, p.value) %>%
+    right_join(select(tb_means, -c(".group", "cld"))) %>%
+    mutate(star = ifelse(!is.na(p.value) & p.value <= 0.05, "*", ""))
+
+ggplot(data = tb_means_ctr,
+       mapping = aes(x = as.numeric(Ds), y = emmean)) +
+    facet_wrap(facets = ~Fs) +
+    geom_point() +
+    geom_errorbar(mapping = aes(ymin = lower.CL,
+                                ymax = upper.CL),
+                  width = 5) +
+    geom_text(mapping = aes(label = sprintf("%0.1f %s", emmean, star)),
+              angle = 90,
+              vjust = -1/2) +
+    expand_limits(x = c(-10, NA))
+
+#-----------------------------------------------------------------------
+# Modelo de regressão múltipla.
+
+# Importação dos dados.
+url <- "http://leg.ufpr.br/~walmes/data/chimarrita.txt"
+tb <- read_tsv(file = url, comment = "#")
+attr(tb, "spec") <- NULL
+str(tb)
+
+# Filtro para os frutos que tiveram ferimento.
+tb <- filter(tb, fer == "sim")
+str(tb)
+
+# Seleciona as variáveis do instante 0 para prever o resultado as 48 e
+# 60 horas após.
+tb_sel <- tb %>%
+    select(matches("[[:alpha:]]0$"), lesao48, lesao60)
+tb_sel
+
+# Matrizes de diagramas de dispersão.
+lattice::splom(tb_sel,
+               type = c("p", "smooth"),
+               col.line = "red")
+
+# Cria uma versão empilhada para fazer gráficos.
+tb_long <- tb_sel %>%
+    gather(key = "variavel", value = "valor", -lesao60, -lesao48)
+str(tb_long)
+
+ggplot(data = tb_long,
+       mapping = aes(x = valor, y = lesao60)) +
+    facet_wrap(facets = ~variavel, scale = "free_x") +
+    geom_point() +
+    geom_smooth()
+
+# Define modelo com todas as interações duplas.
+m0 <- lm(lesao60 ~ (cor0 + ida0 + ms0 + ss0 + f0 + b0)^2,
+         data = tb_sel)
+
+# Inspeção.
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+# Estimativas dos parâmetros.
+summary(m0)
+
+# Seleção de variáveis por stepwise via critério AIC (default).
+m1 <- step(m0, k = 2)
+summary(m1)
+
+# Seleção de variáveis por stepwise via critério BIC.
+m2 <- step(m0, k = log(nrow(tb_sel)))
+summary(m2)
+
+pred <- with(na.omit(tb_sel),
+             expand.grid(
+                 cor0 = seq(min(cor0), max(cor0), length.out = 20),
+                 ms0 = seq(min(ms0), max(ms0), length.out = 20),
+                 ida0 = mean(ida0),
+                 ss0 = mean(ss0),
+                 b0 = mean(b0)))
+pred$lesao60 <- predict(m2, newdata = pred)
+
+ggplot(data = pred,
+       mapping = aes(x = b0, y = ms0, fill = lesao60, z = lesao60)) +
+    geom_tile() +
+    geom_contour(color = "black") +
+    scale_fill_distiller(palette = 4)
 
 #-----------------------------------------------------------------------
