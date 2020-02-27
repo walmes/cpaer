@@ -317,15 +317,9 @@ tb_means <- multcomp::cld(emm) %>%
 tb_means
 
 # Automatizando a conversão de números para letras.
-num2let <- function(x) {
-    stopifnot(is.character(x))
-    u <- strsplit(x = trimws(x), split = "")
-    k <- max(as.integer(unlist(u)))
-    sapply(u,
-           function(v) {
-               paste(letters[k:1][as.integer(rev(v))], collapse = "")
-           })
-}
+# Função definida em um arquivo separado e carregada.
+source("./funcoes.R")
+body(num2let)
 
 tb_means <- tb_means %>%
     mutate(cld = num2let(.group))
