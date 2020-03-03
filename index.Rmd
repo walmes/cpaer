@@ -16,20 +16,33 @@ output:
 source("config/setup.R")
 ```
 
-# Informações
+# Informações {.tabset .tabset-fade}
+
+## Curso UFC
 
   + **Curso:** Planejamento e Análise de Experimentos com R.
   + **Instrutor:** [Walmes Marques Zeviani], (DEST/[LEG]).
-  + **Local:** Escola SUperior de Agricultura "Luiz de Queiroz" (ESALQ/USP) · Piracicaba/SP.
+  + **Local:** Universidade Federal do Ceará · Fortaleza/CE.
+  + **Período:** 03 e 04 de Março de 2020.
+  + **Público:** Alunos dos Programas de Pós Graduação em [Zootecnica](https://ppgzootecnia.ufc.br/) e [Engenharia de Teleinformática](https://ppgeti.ufc.br/pt/).
+  + **Carga horária**: 8 horas.
+
+## Curso Esalq/USP
+
+  + **Curso:** Planejamento e Análise de Experimentos com R.
+  + **Instrutor:** [Walmes Marques Zeviani], (DEST/[LEG]).
+  + **Local:** Escola Superior de Agricultura "Luiz de Queiroz" (ESALQ/USP) · Piracicaba/SP.
   + **Período:** 19 a 21 de Fevereiro de 2020.
-  + **Público:** Alunos do Programa de Pós Graduação em Solos e Nutrição de Plantas.
+  + **Público:** Alunos do Programa de Pós Graduação em [Solos e Nutrição de Plantas](https://www.esalq.usp.br/pg/programas/solos/).
   + **Carga horária**: 15 horas.
 
+<!-- .
 # Formulário de pré-avaliação
 
 <div class="alert alert-info" role="alert">
   <a href="https://forms.gle/nk2tXgZoqw5rgXuJ8" target="_blank">Clique aqui para preencher o formulário de pré-avaliação.</a>
 </div>
+-->
 
 # Ementa prevista
 
@@ -68,8 +81,8 @@ source("config/setup.R")
 
   * [Manual de Planejamento e Análise de Experimentos com R](http://leg.ufpr.br/~walmes/mpaer/) (em construção).
   * [Cursos relacionados](http://leg.ufpr.br/~walmes/home/shortcourses/).
-  * https://rstudio.com/resources/cheatsheets/
-  * https://cran.r-project.org/doc/contrib/Short-refcard.pdf
+  * [Cartão de Referência do R](https://cran.r-project.org/doc/contrib/Short-refcard.pdf).
+  * [Cartões de Referência Diversos](https://rstudio.com/resources/cheatsheets/).
 
 # Requisitos de software
 
